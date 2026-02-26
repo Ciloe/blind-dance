@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 min-h-screen;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform active:scale-95 md:hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none min-h-[44px];
+  }
+
+  .btn-secondary {
+    @apply bg-white text-purple-600 font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg border-2 border-purple-300 hover:border-purple-400 transform active:scale-95 md:hover:scale-105 transition-all duration-200 min-h-[44px];
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-xl p-6 border border-gray-100;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-purple-400 focus:outline-none transition-colors text-base min-h-[44px];
+  }
+
+  .avatar-option {
+    @apply w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center text-3xl sm:text-4xl rounded-full border-4 border-transparent hover:border-purple-400 cursor-pointer transition-all active:scale-95 md:hover:scale-110 bg-white shadow-md;
+  }
+
+  .avatar-option.selected {
+    @apply border-purple-500 ring-4 ring-purple-200 scale-105 md:scale-110;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
