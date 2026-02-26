@@ -1,5 +1,46 @@
 # Changelog
 
+## Version 1.2.0 - Migration Vercel Blob
+
+### 🚀 Migration Complète vers Vercel Blob
+
+**Date** : 2026-02-26
+
+#### Changements Majeurs
+
+- **❌ Suppression MongoDB** : MongoDB complètement retiré du projet
+- **✅ Ajout Vercel Blob** : Stockage serverless avec 100GB gratuits
+- **⚡ Simplification** : Plus besoin de Docker ou serveur de base de données
+- **🌐 Vercel Ready** : Déploiement en 1 clic
+
+**Fichiers créés** :
+- `src/lib/blob.ts` - Client Vercel Blob complet (272 lignes)
+- `VERCEL_BLOB.md` - Documentation Vercel Blob
+- `DEPLOYMENT.md` - Guide déploiement Vercel
+- `INTEGRITY_REPORT.md` - Rapport d'intégrité
+- `INDEX.md` - Navigation documentation
+
+**Fichiers migrés** :
+- Toutes les routes API (11 fichiers)
+- `src/lib/kv.ts` - Réexport blob.ts pour compatibilité
+
+**Fichiers supprimés** :
+- `src/lib/mongodb.ts` - Plus nécessaire
+- Package `mongodb` - Désinstallé
+
+**Backup** :
+- Tous les fichiers MongoDB sauvegardés dans `backup/`
+
+#### Avantages
+
+- ✅ **100 GB gratuits** (vs 512 MB MongoDB Atlas)
+- ✅ **Zero maintenance** (serverless)
+- ✅ **CDN global** (accès rapide partout)
+- ✅ **1 clic déploiement** (Vercel native)
+- ✅ **-11 packages** (projet plus léger)
+
+---
+
 ## Version 1.1.0 - Améliorations Majeures
 
 ### ✨ Nouvelles Fonctionnalités

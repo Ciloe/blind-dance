@@ -5,9 +5,9 @@
 Ce projet utilise les dernières versions stables des packages suivants :
 
 ### Dépendances Principales
-- **Next.js 15.1.3** - Framework React avec support SSE
+- **Next.js 15.5.12** - Framework React avec support SSE
 - **React 19.0.0** - Bibliothèque UI avec nouvelles fonctionnalités
-- **MongoDB 6.12.0** - Driver MongoDB officiel
+- **@vercel/blob 2.3.0** - Stockage Vercel Blob
 - **Framer Motion 11.15.0** - Animations fluides
 - **Lucide React 0.468.0** - Icônes modernes
 - **Nanoid 5.0.9** - Générateur d'IDs sécurisé
@@ -62,11 +62,11 @@ npm outdated
 - ✅ Utiliser `.env.local.example` comme template
 - ⚠️ Changer les secrets en production
 
-### MongoDB
-- ✅ Utiliser des URI avec authentification
-- ✅ Activer l'IP Whitelist sur MongoDB Atlas
-- ✅ Ne pas exposer les ports MongoDB directement
-- ✅ Utiliser des indexes pour les performances
+### Vercel Blob
+- ✅ Token stocké côté serveur uniquement
+- ✅ Access control via Vercel
+- ✅ Pas d'exposition de données sensibles
+- ✅ Backups automatiques Vercel
 
 ### Next.js
 - ✅ Les API routes sont protégées côté serveur

@@ -1,89 +1,61 @@
-Ch# 🚀 Quick Start - Blind Dance
+# 🚀 Quick Start - Blind Dance
 
-## Installation Rapide avec Docker (Recommandé)
+## Installation Rapide avec Vercel (Recommandé)
 
-Si vous ne voulez pas installer MongoDB localement :
+L'application utilise **Vercel Blob** pour le stockage. Aucune base de données à installer !
 
 ```bash
-# Configuration initiale (une seule fois)
-make setup
+# 1. Installer les dépendances
+npm install
 
-# Démarrer
-make docker-start
-# ou: make up
+# 2. Lier à Vercel et récupérer les credentials
+npm i -g vercel
+vercel link
+vercel env pull .env.local
+
+# 3. Démarrer
+npm run dev
 ```
 
 **✅ C'est tout ! L'application démarre sur http://localhost:3000**
 
-**📚 Voir [MAKEFILE.md](MAKEFILE.md) pour toutes les commandes**
-**📚 Voir [DOCKER.md](DOCKER.md) pour plus de détails**
+**📚 Voir [DEPLOYMENT.md](DEPLOYMENT.md) pour le déploiement complet**
+**📚 Voir [VERCEL_BLOB.md](VERCEL_BLOB.md) pour plus de détails**
 
 ---
 
-## Installation Sans Docker
+## Installation Sans Vercel CLI
 
-```bash
-# Configuration complète
-make setup
-
-# Démarrer MongoDB (dans un autre terminal)
-mongod
-
-# Démarrer l'application
-make dev
-```
-
-Ce script va :
-- ✅ Vérifier Node.js et npm
-- ✅ Nettoyer les anciennes installations
-- ✅ Installer toutes les dépendances
-- ✅ Vérifier les vulnérabilités de sécurité
-- ✅ Créer .env.local si nécessaire
-- ✅ Vérifier MongoDB
-
-## Installation Manuelle
+Si vous ne voulez pas utiliser Vercel CLI :
 
 ### 1. Installer les dépendances
 
 ```bash
-# Nettoyer (optionnel)
-rm -rf node_modules package-lock.json
-
-# Installer
 npm install
-
-# En cas d'erreur de peer dependencies
-npm install --legacy-peer-deps
 ```
 
-### 2. Configurer MongoDB
+### 2. Configurer Vercel Blob
 
 Créez `.env.local` :
 
 ```env
-MONGODB_URI=mongodb://localhost:27017/blind-dance
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_YOUR_TOKEN
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-**Ou utilisez MongoDB Atlas (cloud) :**
-```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/blind-dance
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-```
+Pour obtenir le token :
+1. Créer un compte sur [vercel.com](https://vercel.com)
+2. Créer un projet
+3. Storage → Create → Blob
+4. Copier le token
 
-### 3. Démarrer MongoDB (si local)
-
-```bash
-mongod
-```
-
-### 4. Lancer l'application
+### 3. Lancer l'application
 
 ```bash
 npm run dev
 ```
 
-### 5. Ouvrir dans le navigateur
+### 4. Ouvrir dans le navigateur
 
 ```
 http://localhost:3000
@@ -97,9 +69,6 @@ npm audit
 
 # Corriger automatiquement
 npm audit fix
-
-# Utiliser le script de vérification complet
-bash scripts/check-security.sh
 ```
 
 ## Commandes Utiles
@@ -145,13 +114,12 @@ rm -rf node_modules .next
 npm install
 ```
 
-### ❌ "ECONNREFUSED MongoDB"
+### ❌ "Missing BLOB_READ_WRITE_TOKEN"
 ```bash
-# Démarrer MongoDB
-mongod
+# Télécharger depuis Vercel
+vercel env pull .env.local
 
-# Ou vérifier votre .env.local
-cat .env.local
+# Ou créer Blob store sur Vercel dashboard
 ```
 
 ### ❌ "Port 3000 already in use"
@@ -179,25 +147,33 @@ git push origin main
 ```
 
 ### 2. Déployer sur Vercel
-1. Aller sur https://vercel.com
+1. Aller sur https://vercel.com/new
 2. Importer votre repository GitHub
-3. Configurer les variables d'environnement :
-   - `MONGODB_URI` : Votre URI MongoDB Atlas
-   - `NEXT_PUBLIC_BASE_URL` : URL de votre app (ex: https://blind-dance.vercel.app)
-4. Déployer !
+3. Déployer
+
+### 3. Créer Blob Store
+1. Dashboard Vercel → Storage → Create → Blob
+2. Les variables sont automatiquement configurées !
+
+### 4. Configurer NEXT_PUBLIC_BASE_URL
+1. Settings → Environment Variables
+2. Ajouter `NEXT_PUBLIC_BASE_URL` avec votre URL Vercel
+
+**📚 Guide complet : [DEPLOYMENT.md](DEPLOYMENT.md)**
 
 ## Support
 
-- 📚 Documentation complète : `README.md`
-- 🔒 Sécurité : `SECURITY.md`
-- 🔄 Mises à jour : `UPDATE_GUIDE.md`
-- 📝 Changelog : `CHANGELOG.md`
+- 📚 Documentation complète : [README.md](README.md)
+- 📦 Guide Vercel Blob : [VERCEL_BLOB.md](VERCEL_BLOB.md)
+- 🔒 Sécurité : [SECURITY.md](SECURITY.md)
+- 📝 Changelog : [CHANGELOG.md](CHANGELOG.md)
+- 🗺️ Navigation : [INDEX.md](INDEX.md)
 
 ## Versions
 
 - **Node.js** : 18+ recommandé
 - **npm** : 9+ recommandé
-- **MongoDB** : 6+ recommandé
+- **Vercel Blob** : Inclus avec Vercel (gratuit)
 
 ---
 
