@@ -22,12 +22,39 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState('');
+  const [initialSession, setInitialSession] = useState<Session | null>(null);
+  const [initialLoading, setInitialLoading] = useState(false);
 
-  // Utiliser le hook useSession pour le temps réel avec SSE
-  const { session, isLoading: sessionLoading, error: sessionError } = useSession(
+  // Fetch initial de la session après avoir rejoint
+  useEffect(() => {
+    if (!hasJoined) return;
+
+    const fetchInitialSession = async () => {
+      setInitialLoading(true);
+      try {
+        const response = await fetch(`/api/session/${resolvedParams.sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setInitialSession(data);
+        }
+      } catch (error) {
+        console.error('Error fetching initial session:', error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchInitialSession();
+  }, [resolvedParams.sessionId, hasJoined]);
+
+  // Utiliser le hook useSession pour les mises à jour en temps réel via SSE
+  const { session: liveSession, error: sessionError } = useSession(
     resolvedParams.sessionId,
-    hasJoined
+    hasJoined && !initialLoading
   );
+
+  // Utiliser la session live si disponible, sinon la session initiale
+  const session = liveSession || initialSession;
 
   const handleRandomUsername = () => {
     setUsername(generateRandomUsername());
@@ -174,19 +201,19 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   }
 
   // Chargement de la session
-  if (!session) {
+  if (hasJoined && (initialLoading || !session)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4 animate-bounce">💃</div>
-          <p className="text-xl text-gray-600">Chargement...</p>
+          <p className="text-xl text-gray-600">Chargement de la session...</p>
         </div>
       </div>
     );
   }
 
   // File d'attente
-  if (session.status === 'waiting') {
+  if (session && session.status === 'waiting') {
     return (
       <div className="min-h-screen p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
@@ -210,7 +237,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   }
 
   // Jeu en cours
-  if (session.status === 'playing' && playerId) {
+  if (session && session.status === 'playing' && playerId) {
     const currentRound = session.rounds[session.currentRound];
     return (
       <div className="min-h-screen p-4 md:p-8">
@@ -227,7 +254,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   }
 
   // Tableau des scores entre les rounds
-  if (session.status === 'scoreboard') {
+  if (session && session.status === 'scoreboard') {
     const rankedPlayers = rankPlayers(session.players);
     const scores: ScoreEntry[] = rankedPlayers.map((player, index) => ({
       ...player,
@@ -257,7 +284,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
   }
 
   // Podium final
-  if (session.status === 'finished') {
+  if (session && session.status === 'finished') {
     const rankedPlayers = rankPlayers(session.players);
     return (
       <div className="min-h-screen p-4 md:p-8">

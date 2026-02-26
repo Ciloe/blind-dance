@@ -14,22 +14,53 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
   const [rounds, setRounds] = useState<Round[]>([]);
   const [adminId, setAdminId] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [initialSession, setInitialSession] = useState<Session | null>(null);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const sessionUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/play/${resolvedParams.sessionId}`;
 
-  // Utiliser le hook useSession pour le temps réel avec SSE
-  const { session, isLoading: sessionLoading, error: sessionError } = useSession(
+  // Fetch initial de la session au montage du composant
+  useEffect(() => {
+    const fetchInitialSession = async () => {
+      try {
+        const response = await fetch(`/api/session/${resolvedParams.sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setInitialSession(data);
+          setRounds(data.rounds || []);
+          setAdminId(data.adminId);
+        } else {
+          setFetchError('Session non trouvée');
+        }
+      } catch (error) {
+        console.error('Error fetching initial session:', error);
+        setFetchError('Erreur de chargement');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchInitialSession();
+  }, [resolvedParams.sessionId]);
+
+  // Utiliser le hook useSession pour les mises à jour en temps réel via SSE
+  // Activé seulement après le chargement initial
+  const { session: liveSession, error: sessionError } = useSession(
     resolvedParams.sessionId,
-    true
+    !initialLoading && initialSession !== null
   );
 
-  // Charger les rounds depuis la session
+  // Utiliser la session live si disponible, sinon la session initiale
+  const session = liveSession || initialSession;
+
+  // Mettre à jour les rounds depuis la session live
   useEffect(() => {
-    if (session) {
-      setRounds(session.rounds || []);
-      setAdminId(session.adminId);
+    if (liveSession) {
+      setRounds(liveSession.rounds || []);
+      setAdminId(liveSession.adminId);
     }
-  }, [session]);
+  }, [liveSession]);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(sessionUrl);
@@ -189,20 +220,64 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
     });
   };
 
-  if (!session) {
+  // Afficher le chargement pendant le fetch initial
+  if (initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4 animate-bounce">💃</div>
-          <p className="text-xl text-gray-600">Chargement...</p>
+          <p className="text-xl text-gray-600">Chargement de la session...</p>
         </div>
       </div>
     );
   }
 
+  // Afficher une erreur si la session n'existe pas
+  if (fetchError || !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Session introuvable
+          </h1>
+          <p className="text-gray-600 mb-6">
+            La session {resolvedParams.sessionId} n&apos;existe pas ou a expiré.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="btn-primary"
+          >
+            Retour à l&apos;accueil
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher une notification si SSE rencontre une erreur (non bloquant)
+  const showSSEError = sessionError && !liveSession;
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
+        {/* Notification d'erreur SSE (non bloquante) */}
+        {showSSEError && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-yellow-700">
+                  Connexion temps réel interrompue. Les mises à jour automatiques ne fonctionnent pas.
+                  Rafraîchissez la page pour voir les derniers changements.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
