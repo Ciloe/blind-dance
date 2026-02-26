@@ -27,6 +27,14 @@ export default function GameRound({
   useEffect(() => {
     if (hasAnswered) return;
 
+    const handleTimeout = async () => {
+      if (!hasAnswered && !selectedAnswer) {
+        // Soumettre une réponse vide
+        setHasAnswered(true);
+        // Vous pouvez soumettre une réponse "vide" qui comptera 0 points
+      }
+    };
+
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
@@ -39,15 +47,7 @@ export default function GameRound({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [hasAnswered]);
-
-  const handleTimeout = async () => {
-    if (!hasAnswered && !selectedAnswer) {
-      // Soumettre une réponse vide
-      setHasAnswered(true);
-      // Vous pouvez soumettre une réponse "vide" qui comptera 0 points
-    }
-  };
+  }, [hasAnswered, selectedAnswer]);
 
   const handleSelectAnswer = async (answer: string) => {
     if (hasAnswered) return;

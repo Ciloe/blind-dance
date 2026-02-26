@@ -2,6 +2,7 @@
 
 import { MediaType } from '@/types';
 import { Music, Video, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 
 interface MediaPlayerProps {
   mediaUrl: string;
@@ -11,7 +12,7 @@ interface MediaPlayerProps {
 export default function MediaPlayer({ mediaUrl, mediaType }: MediaPlayerProps) {
   return (
     <div className="card">
-      <div className="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg overflow-hidden flex items-center justify-center">
+      <div className="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg overflow-hidden flex items-center justify-center relative">
         {mediaType === 'video' && (
           <video
             src={mediaUrl}
@@ -23,11 +24,13 @@ export default function MediaPlayer({ mediaUrl, mediaType }: MediaPlayerProps) {
           </video>
         )}
 
-        {mediaType === 'image' && (
-          <img
+        {mediaType === 'image' && mediaUrl && (
+          <Image
             src={mediaUrl}
             alt="Danse"
-            className="w-full h-full object-contain"
+            fill
+            className="object-contain"
+            unoptimized
           />
         )}
 
@@ -40,7 +43,7 @@ export default function MediaPlayer({ mediaUrl, mediaType }: MediaPlayerProps) {
               autoPlay
               className="w-full max-w-md"
             >
-              Votre navigateur ne supporte pas l'audio.
+              Votre navigateur ne supporte pas l&apos;audio.
             </audio>
             <p className="mt-4 text-gray-600">Écoutez attentivement...</p>
           </div>

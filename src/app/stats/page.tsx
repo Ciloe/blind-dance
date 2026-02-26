@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PlayerStats } from '@/types/stats';
 import { Trophy, TrendingUp, Target, Award, Calendar, ArrowLeft } from 'lucide-react';
@@ -20,7 +20,7 @@ interface LeaderboardEntry {
   winRate: number;
 }
 
-export default function StatsPage() {
+function StatsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const username = searchParams.get('username');
@@ -97,7 +97,7 @@ export default function StatsPage() {
             className="flex items-center text-purple-600 hover:text-purple-700 mb-4 font-semibold"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            Retour à l'accueil
+            Retour à l&apos;accueil
           </button>
 
           <div className="text-center">
@@ -371,5 +371,20 @@ export default function StatsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StatsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4 animate-bounce">📊</div>
+          <p className="text-xl text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    }>
+      <StatsPageContent />
+    </Suspense>
   );
 }

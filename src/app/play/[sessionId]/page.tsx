@@ -165,7 +165,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
               onClick={() => router.push('/')}
               className="text-purple-600 hover:text-purple-700 font-semibold"
             >
-              ← Retour à l'accueil
+              ← Retour à l&apos;accueil
             </button>
           </div>
         </div>
@@ -195,7 +195,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
               En attente du démarrage
             </h1>
             <p className="text-gray-600">
-              L'administrateur va bientôt lancer la partie...
+              L&apos;administrateur va bientôt lancer la partie...
             </p>
           </div>
 
@@ -276,7 +276,7 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
               onClick={() => router.push('/')}
               className="btn-primary"
             >
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </button>
           </div>
         </div>

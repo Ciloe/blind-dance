@@ -441,7 +441,7 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
               onClick={() => router.push('/')}
               className="btn-primary"
             >
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </button>
           </div>
         )}
