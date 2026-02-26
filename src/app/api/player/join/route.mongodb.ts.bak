@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, addPlayerToSession } from '@/lib/kv';
+import { getDatabase } from '@/lib/mongodb';
 import { generatePlayerId } from '@/lib/utils';
-import { Player } from '@/types';
+import { Session, Player } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await getSession(sessionId);
+    const db = await getDatabase();
+    const sessionsCollection = db.collection<Session>('sessions');
+
+    const session = await sessionsCollection.findOne({ sessionId });
 
     if (!session) {
       return NextResponse.json(
@@ -41,7 +44,13 @@ export async function POST(request: NextRequest) {
       joinedAt: new Date(),
     };
 
-    await addPlayerToSession(sessionId, newPlayer);
+    await sessionsCollection.updateOne(
+      { sessionId },
+      {
+        $push: { players: newPlayer },
+        $set: { updatedAt: new Date() },
+      }
+    );
 
     return NextResponse.json({
       playerId,

@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createSession } from '@/lib/kv';
+import { getDatabase } from '@/lib/mongodb';
 import { generateSessionId, generatePlayerId } from '@/lib/utils';
 import { Session } from '@/types';
 
 export async function POST() {
   try {
+    const db = await getDatabase();
+    const sessionsCollection = db.collection<Session>('sessions');
+
     const sessionId = generateSessionId();
     const adminId = generatePlayerId();
 
@@ -19,7 +22,7 @@ export async function POST() {
       updatedAt: new Date(),
     };
 
-    await createSession(newSession);
+    await sessionsCollection.insertOne(newSession);
 
     return NextResponse.json({
       sessionId,

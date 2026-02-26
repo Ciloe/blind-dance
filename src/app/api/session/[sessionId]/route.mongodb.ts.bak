@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, updateSession } from '@/lib/kv';
+import { getDatabase } from '@/lib/mongodb';
+import { Session } from '@/types';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +8,10 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await params;
-    const session = await getSession(sessionId);
+    const db = await getDatabase();
+    const sessionsCollection = db.collection<Session>('sessions');
+
+    const session = await sessionsCollection.findOne({ sessionId });
 
     if (!session) {
       return NextResponse.json(
@@ -33,20 +37,29 @@ export async function PATCH(
   try {
     const { sessionId } = await params;
     const body = await request.json();
+    const db = await getDatabase();
+    const sessionsCollection = db.collection<Session>('sessions');
 
-    await updateSession(sessionId, body);
+    const updateData = {
+      ...body,
+      updatedAt: new Date(),
+    };
 
-    return NextResponse.json({ message: 'Session updated successfully' });
-  } catch (error) {
-    console.error('Error updating session:', error);
+    const result = await sessionsCollection.updateOne(
+      { sessionId },
+      { $set: updateData }
+    );
 
-    if (error instanceof Error && error.message === 'Session not found') {
+    if (result.matchedCount === 0) {
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
       );
     }
 
+    return NextResponse.json({ message: 'Session updated successfully' });
+  } catch (error) {
+    console.error('Error updating session:', error);
     return NextResponse.json(
       { error: 'Failed to update session' },
       { status: 500 }

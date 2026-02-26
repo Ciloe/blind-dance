@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getSession } from '@/lib/kv';
+import { getDatabase } from '@/lib/mongodb';
+import { Session } from '@/types';
 
 // Server-Sent Events pour le temps réel
 export async function GET(
@@ -11,6 +12,9 @@ export async function GET(
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
+      const db = await getDatabase();
+      const sessionsCollection = db.collection<Session>('sessions');
+
       let lastUpdate = new Date();
       let isClosed = false;
 
@@ -19,7 +23,7 @@ export async function GET(
         if (isClosed) return;
 
         try {
-          const session = await getSession(sessionId);
+          const session = await sessionsCollection.findOne({ sessionId });
 
           if (session && session.updatedAt > lastUpdate) {
             lastUpdate = session.updatedAt;

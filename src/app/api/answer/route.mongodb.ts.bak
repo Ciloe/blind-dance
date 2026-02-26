@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, addAnswerToRound, updatePlayerScore } from '@/lib/kv';
+import { getDatabase } from '@/lib/mongodb';
 import { calculatePoints } from '@/lib/utils';
-import { Answer } from '@/types';
+import { Session, Answer } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await getSession(sessionId);
+    const db = await getDatabase();
+    const sessionsCollection = db.collection<Session>('sessions');
+
+    const session = await sessionsCollection.findOne({ sessionId });
 
     if (!session) {
       return NextResponse.json(
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier si le joueur a déjà répondu
-    const alreadyAnswered = round.answers.some((a: Answer) => a.playerId === playerId);
+    const alreadyAnswered = round.answers.some((a) => a.playerId === playerId);
     if (alreadyAnswered) {
       return NextResponse.json(
         { error: 'Player has already answered' },
@@ -51,11 +54,22 @@ export async function POST(request: NextRequest) {
       points,
     };
 
-    // Ajouter la réponse
-    await addAnswerToRound(sessionId, roundNumber, playerAnswer);
+    // Mettre à jour la réponse dans le round
+    await sessionsCollection.updateOne(
+      { sessionId },
+      {
+        $push: { [`rounds.${roundNumber}.answers`]: playerAnswer },
+        $set: { updatedAt: new Date() },
+      }
+    );
 
     // Mettre à jour le score du joueur
-    await updatePlayerScore(sessionId, playerId, points);
+    await sessionsCollection.updateOne(
+      { sessionId, 'players.id': playerId },
+      {
+        $inc: { 'players.$.score': points },
+      }
+    );
 
     return NextResponse.json({
       points,

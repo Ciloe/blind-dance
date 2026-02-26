@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveSessionResult } from '@/lib/kv';
+import { getDatabase } from '@/lib/mongodb';
 import { SessionResult } from '@/types/stats';
 
 export async function POST(request: NextRequest) {
@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const db = await getDatabase();
+    const resultsCollection = db.collection<SessionResult>('session_results');
+
+    // Sauvegarder le résultat de la session
     const sessionResult: SessionResult = {
       sessionId,
       completedAt: new Date(),
@@ -21,7 +25,7 @@ export async function POST(request: NextRequest) {
       players,
     };
 
-    await saveSessionResult(sessionResult);
+    await resultsCollection.insertOne(sessionResult);
 
     return NextResponse.json({
       message: 'Stats saved successfully',

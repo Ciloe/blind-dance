@@ -26,85 +26,63 @@ Un jeu multijoueur interactif où les joueurs devinent le type de danse à parti
 ### Prérequis
 
 - Node.js 18+
-- **Option 1** : Docker Desktop (Recommandé - pas besoin d'installer MongoDB)
-- **Option 2** : MongoDB local ou MongoDB Atlas
+- Compte Vercel (gratuit) - pour le stockage Blob
+- Git et GitHub (pour le déploiement)
 
-### Installation avec Docker (Recommandé)
-
-La méthode la plus simple si vous ne voulez pas installer MongoDB localement :
+### Installation Rapide
 
 ```bash
-# Configuration initiale
-make setup
+# 1. Installer les dépendances
+npm install
 
-# Démarrer l'application complète (MongoDB + App)
-make docker-start
-# ou simplement: make up
+# 2. Lier à Vercel et récupérer les credentials
+npm i -g vercel
+vercel link
+vercel env pull .env.local
+
+# 3. Démarrer
+npm run dev
 ```
 
-L'application sera accessible sur http://localhost:3000
+**📚 Voir [DEPLOYMENT.md](DEPLOYMENT.md) pour le déploiement complet**
 
-**📚 Voir [DOCKER.md](DOCKER.md) pour le guide complet Docker**
-**📚 Voir [MAKEFILE.md](MAKEFILE.md) pour toutes les commandes disponibles**
-
-### Installation Sans Docker
+### Installation Alternative (Sans Vercel CLI)
 
 ### Étapes d'installation
 
-1. **Cloner le projet**
+1. **Installer les dépendances**
    ```bash
-   cd blind-dance
+   npm install
    ```
 
-2. **Configuration complète**
+2. **Configurer Vercel Blob**
+
    ```bash
-   # Tout installer et configurer en une commande
-   make setup
+   # Installer Vercel CLI
+   npm i -g vercel
+
+   # Lier le projet
+   vercel link
+
+   # Télécharger les variables d'environnement
+   vercel env pull .env.local
    ```
 
-   Ou manuellement :
-   ```bash
-   # Installer les dépendances
-   make install
-
-   # Créer .env.local
-   make create-env
-
-   # Vérifier la sécurité
-   make audit
-   ```
-
-3. **Configurer MongoDB**
-
-   Le fichier `.env.local` est créé automatiquement par `make setup`.
-
-   Pour MongoDB local :
+   Ou configurez manuellement `.env.local` :
    ```env
-   MONGODB_URI=mongodb://localhost:27017/blind-dance
+   BLOB_READ_WRITE_TOKEN=vercel_blob_rw_YOUR_TOKEN
    NEXT_PUBLIC_BASE_URL=http://localhost:3000
    ```
 
-   Pour MongoDB Atlas (cloud) :
-   ```env
-   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/blind-dance
-   NEXT_PUBLIC_BASE_URL=http://localhost:3000
-   ```
-
-4. **Démarrer l'application**
+3. **Démarrer l'application**
 
    ```bash
-   # Avec Docker (MongoDB inclus)
-   make docker-start
-
-   # Sans Docker (MongoDB local requis)
-   mongod  # Dans un autre terminal
-   make dev
+   npm run dev
    ```
 
-5. **Ouvrir dans le navigateur**
-   ```bash
-   make open
-   # ou manuellement: http://localhost:3000
+4. **Ouvrir dans le navigateur**
+   ```
+   http://localhost:3000
    ```
 
 ## 📖 Utilisation
@@ -148,12 +126,13 @@ L'application sera accessible sur http://localhost:3000
 
 ### Stack technique
 
-- **Framework** : Next.js 15 (App Router)
-- **Base de données** : MongoDB
+- **Framework** : Next.js 15.5 (App Router)
+- **Stockage** : Vercel Blob (Object Storage)
 - **Styling** : Tailwind CSS
 - **Animations** : Framer Motion
 - **Icônes** : Lucide React
 - **Langage** : TypeScript
+- **Déploiement** : Vercel (Serverless)
 
 ### Structure des dossiers
 
@@ -183,19 +162,27 @@ src/
     └── stats.ts               # Types statistiques
 ```
 
-### Base de données
+### Stockage des Données (Vercel Blob)
 
-**Collection `sessions`** :
+Les données sont stockées dans Vercel Blob comme fichiers JSON :
+
+**`sessions/{sessionId}.json`** :
 - Informations de session (ID, statut, admin)
 - Liste des joueurs avec leurs scores
 - Configuration des rounds
 - Réponses des joueurs
 
-**Collection `session_results`** (nouveau) :
-- Résultats finaux de chaque partie terminée
+**`results/{sessionId}.json`** :
+- Résultats finaux de chaque partie
 - Classement des joueurs
 - Statistiques de performance
-- Utilisé pour générer les stats et le leaderboard
+
+**`stats/players/{username}.json`** :
+- Stats personnelles par joueur
+- Historique des parties
+
+**`stats/leaderboard.json`** :
+- Top 100 des meilleurs joueurs
 
 ## 📊 Système de points
 
@@ -207,18 +194,27 @@ src/
 
 ## 🚢 Déploiement sur Vercel
 
-1. **Pusher le code sur GitHub**
+### Guide Rapide
 
-2. **Créer un compte MongoDB Atlas** (si ce n'est pas déjà fait)
-   - Créez un cluster gratuit
-   - Notez votre URI de connexion
+1. **Push sur GitHub**
+   ```bash
+   git push origin main
+   ```
 
-3. **Déployer sur Vercel**
-   - Importez votre repository GitHub
-   - Ajoutez les variables d'environnement :
-     - `MONGODB_URI` : Votre URI MongoDB Atlas
-     - `NEXT_PUBLIC_BASE_URL` : L'URL de votre app (ex: https://blind-dance.vercel.app)
-   - Déployez !
+2. **Importer sur Vercel**
+   - Aller sur [vercel.com/new](https://vercel.com/new)
+   - Importer le repository GitHub
+   - Déployer
+
+3. **Créer Blob Store**
+   - Dashboard → Storage → Create → Blob
+   - Les variables sont auto-configurées !
+
+4. **Configurer NEXT_PUBLIC_BASE_URL**
+   - Settings → Environment Variables
+   - Ajouter `NEXT_PUBLIC_BASE_URL` avec l'URL de votre app
+
+**📚 Voir [DEPLOYMENT.md](DEPLOYMENT.md) pour le guide complet**
 
 ## 🎨 Personnalisation
 
@@ -243,11 +239,18 @@ Modifiez `tailwind.config.ts` pour changer le thème de couleurs.
 
 ## 🐛 Dépannage
 
-### MongoDB ne se connecte pas
+### Blob Storage ne fonctionne pas
 
-- Vérifiez que MongoDB est démarré : `mongod`
-- Vérifiez votre `MONGODB_URI` dans `.env.local`
-- Pour MongoDB Atlas, vérifiez que votre IP est autorisée dans les Network Access
+```bash
+# Vérifier les variables
+cat .env.local
+
+# Télécharger depuis Vercel
+vercel env pull .env.local
+
+# Vérifier que le Blob store existe
+# Dashboard Vercel → Storage → Blob
+```
 
 ### Les médias ne s'affichent pas
 
@@ -257,9 +260,10 @@ Modifiez `tailwind.config.ts` pour changer le thème de couleurs.
 
 ### Les joueurs ne voient pas les mises à jour
 
-- L'application utilise du polling toutes les 2-3 secondes
-- Rafraîchissez la page si nécessaire
+- L'application utilise SSE (Server-Sent Events)
 - Vérifiez la connexion réseau
+- Rafraîchissez la page si nécessaire
+- Vérifiez les logs : `vercel logs` (en prod)
 
 ## 📝 License
 
