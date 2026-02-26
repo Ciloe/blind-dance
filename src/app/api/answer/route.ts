@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, addAnswerToRound, updatePlayerScore } from '@/lib/kv';
+import { getSession, addAnswerToRound, updatePlayerScore } from '@/lib/blob';
 import { calculatePoints } from '@/lib/utils';
 import { Answer } from '@/types';
 

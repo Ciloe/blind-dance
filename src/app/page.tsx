@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Music, Users, Sparkles, BarChart3 } from 'lucide-react';
+import { createSession } from '@/actions/session';
 
 export default function HomePage() {
   const router = useRouter();
@@ -12,14 +13,12 @@ export default function HomePage() {
   const handleCreateSession = async () => {
     setIsCreating(true);
     try {
-      const response = await fetch('/api/session/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const result = await createSession();
 
-      if (response.ok) {
-        const data = await response.json();
-        router.push(`/admin/${data.sessionId}`);
+      if (result.success && result.data) {
+        router.push(`/admin/${result.data.sessionId}`);
+      } else {
+        alert(result.error || 'Erreur lors de la création de la session');
       }
     } catch (error) {
       console.error('Error creating session:', error);

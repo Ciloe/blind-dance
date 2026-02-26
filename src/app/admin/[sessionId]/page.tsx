@@ -7,6 +7,8 @@ import PlayerQueue from '@/components/PlayerQueue';
 import { Session, Round, MediaType } from '@/types';
 import { useSession } from '@/hooks/useSession';
 import { rankPlayers } from '@/lib/utils';
+import { getSession, updateSession } from '@/actions/session';
+import { saveStats } from '@/actions/stats';
 
 export default function AdminPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const resolvedParams = use(params);
@@ -24,14 +26,14 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
   useEffect(() => {
     const fetchInitialSession = async () => {
       try {
-        const response = await fetch(`/api/session/${resolvedParams.sessionId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setInitialSession(data);
-          setRounds(data.rounds || []);
-          setAdminId(data.adminId);
+        const result = await getSession(resolvedParams.sessionId);
+
+        if (result.success && result.data) {
+          setInitialSession(result.data);
+          setRounds(result.data.rounds || []);
+          setAdminId(result.data.adminId);
         } else {
-          setFetchError('Session non trouvée');
+          setFetchError(result.error || 'Session non trouvée');
         }
       } catch (error) {
         console.error('Error fetching initial session:', error);
@@ -105,15 +107,11 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
 
   const handleSaveConfiguration = async () => {
     try {
-      await fetch(`/api/session/${resolvedParams.sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rounds }),
-      });
+      await updateSession(resolvedParams.sessionId, { rounds });
       alert('Configuration sauvegardée !');
     } catch (error) {
       console.error('Error saving configuration:', error);
-      alert('Erreur lors de la sauvegarde');
+      alert('Erreur lors de la sauvegarde : ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     }
   };
 
@@ -129,18 +127,14 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
     }
 
     try {
-      await fetch(`/api/session/${resolvedParams.sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rounds,
-          status: 'playing',
-          currentRound: 0,
-        }),
+      await updateSession(resolvedParams.sessionId, {
+        rounds,
+        status: 'playing',
+        currentRound: 0,
       });
     } catch (error) {
       console.error('Error starting game:', error);
-      alert('Erreur lors du démarrage');
+      alert('Erreur lors du démarrage : ' + (error instanceof Error ? error.message : 'Erreur inconnue'));
     }
   };
 
@@ -153,21 +147,13 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
       // Partie terminée - sauvegarder les stats
       await saveGameStats();
 
-      await fetch(`/api/session/${resolvedParams.sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'finished' }),
-      });
+      await updateSession(resolvedParams.sessionId, { status: 'finished' });
       return;
     }
 
-    await fetch(`/api/session/${resolvedParams.sessionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: 'playing',
-        currentRound: nextRound,
-      }),
+    await updateSession(resolvedParams.sessionId, {
+      status: 'playing',
+      currentRound: nextRound,
     });
   };
 
@@ -196,15 +182,11 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
         };
       });
 
-      await fetch('/api/stats/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: session.sessionId,
-          players: playersWithStats,
-          totalRounds: session.rounds.length,
-        }),
-      });
+      await saveStats(
+        session.sessionId,
+        playersWithStats,
+        session.rounds.length
+      );
 
       console.log('Stats saved successfully');
     } catch (error) {
@@ -213,11 +195,7 @@ export default function AdminPage({ params }: { params: Promise<{ sessionId: str
   };
 
   const handleShowScoreboard = async () => {
-    await fetch(`/api/session/${resolvedParams.sessionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'scoreboard' }),
-    });
+    await updateSession(resolvedParams.sessionId, { status: 'scoreboard' });
   };
 
   // Afficher le chargement pendant le fetch initial

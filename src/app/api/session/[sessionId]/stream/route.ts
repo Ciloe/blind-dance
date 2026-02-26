@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getSession } from '@/lib/kv';
+import { getSession } from '@/lib/blob';
 
 // Server-Sent Events pour le temps réel
 export async function GET(

@@ -1,6 +1,10 @@
-import { put, del, list } from '@vercel/blob';
+import { put, del, list, get } from '@vercel/blob';
 import { Session } from '@/types';
 import { SessionResult } from '@/types/stats';
+
+// Cache des URLs de blobs en mémoire (pour éviter les list() répétés)
+const urlCache = new Map<string, { url: string; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 minute
 
 // Chemins dans le blob store
 const PATHS = {
@@ -12,22 +16,80 @@ const PATHS = {
 };
 
 /**
+ * Helper pour obtenir l'URL d'un blob
+ */
+async function getBlobUrl(path: string): Promise<string | null> {
+  // Vérifier le cache
+  const cached = urlCache.get(path);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.url;
+  }
+
+  try {
+    // Lister TOUS les blobs (pas de prefix pour éviter les problèmes)
+    const { blobs } = await list();
+
+    if (blobs.length > 0) {
+      console.log(`📋 All blob pathnames:`, blobs.map(b => b.pathname));
+    }
+
+    // Chercher le blob qui correspond exactement au path
+    const blob = blobs.find(b => b.pathname === path);
+
+    if (!blob) {
+      console.log(`❌ Blob not found: ${path}`);
+      console.log(`Available pathnames:`, blobs.map(b => b.pathname));
+      return null;
+    }
+
+    // Mettre en cache
+    urlCache.set(path, { url: blob.url, timestamp: Date.now() });
+    return blob.url;
+  } catch (error) {
+    console.error(`❌ Error getting blob URL for ${path}:`, error);
+    return null;
+  }
+}
+
+/**
  * Helper pour lire un blob JSON
  */
 async function getBlob<T>(path: string): Promise<T | null> {
   try {
-    // Lister les blobs pour trouver l'URL
-    const { blobs } = await list({ prefix: path, limit: 1 });
+    // Utiliser list pour trouver le blob
+    const { blobs } = await list({ prefix: path });
 
-    if (blobs.length === 0) return null;
+    if (blobs.length === 0) {
+      console.log(`❌ No blobs found with prefix: ${path}`);
+      return null;
+    }
 
-    const response = await fetch(blobs[0].url);
-    if (!response.ok) return null;
+    // Trouver le blob exact
+    const blob = blobs.find(b => b.pathname === path);
 
-    const text = await response.text();
-    return JSON.parse(text) as T;
+    if (!blob) {
+      console.log(`❌ Exact blob not found: ${path}`);
+      console.log(`Available:`, blobs.map(b => b.pathname));
+      return null;
+    }
+
+    const response = await get(blob.url, {access: "public"});
+    if (!response || response.statusCode !== 200) {
+      console.log(`❌ Failed to fetch blob: ${blob.url}`);
+      return null;
+    }
+
+    const text = await NextResponse(response.stream, {
+      headers: {
+        'Content-Type': result.blob.contentType,
+      },
+    });
+    const data = JSON.parse(text) as T;
+
+    console.log(`✅ Blob read successfully`);
+    return data;
   } catch (error) {
-    console.error(`Error reading blob ${path}:`, error);
+    console.error(`❌ Error reading blob ${path}:`, error);
     return null;
   }
 }
@@ -35,13 +97,24 @@ async function getBlob<T>(path: string): Promise<T | null> {
 /**
  * Helper pour écrire un blob JSON
  */
-async function putBlob(path: string, data: any): Promise<void> {
-  const jsonString = JSON.stringify(data);
-  const blob = new Blob([jsonString], { type: 'application/json' });
+async function putBlob(path: string, data: any): Promise<string> {
+  try {
+    const jsonString = JSON.stringify(data);
+    const blob = new Blob([jsonString], { type: 'application/json' });
 
-  await put(path, blob, {
-    access: 'public',
-  });
+    const result = await put(path, blob, {
+      access: 'public',
+      addRandomSuffix: false, // Garder le nom exact
+    });
+
+    // Mettre en cache l'URL
+    urlCache.set(path, { url: result.url, timestamp: Date.now() });
+
+    return result.url;
+  } catch (error) {
+    console.error(`Error writing blob ${path}:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -49,34 +122,81 @@ async function putBlob(path: string, data: any): Promise<void> {
  */
 
 export async function createSession(session: Session): Promise<void> {
-  await putBlob(PATHS.session(session.sessionId), session);
+  try {
+    const path = PATHS.session(session.sessionId);
 
-  // Ajouter à la liste des sessions actives
-  const sessionsList = await getBlob<string[]>(PATHS.sessionsList) || [];
-  if (!sessionsList.includes(session.sessionId)) {
-    sessionsList.push(session.sessionId);
-    await putBlob(PATHS.sessionsList, sessionsList);
+    // Supprimer le blob s'il existe déjà (au cas où)
+    const existingUrl = await getBlobUrl(path);
+    if (existingUrl) {
+      await del(existingUrl);
+      urlCache.delete(path);
+    }
+
+    // Créer la session
+    await putBlob(path, session);
+
+    // Ajouter à la liste des sessions actives
+    const sessionsList = await getBlob<string[]>(PATHS.sessionsList) || [];
+    if (!sessionsList.includes(session.sessionId)) {
+      sessionsList.push(session.sessionId);
+
+      // Supprimer l'ancienne liste si elle existe
+      const listUrl = await getBlobUrl(PATHS.sessionsList);
+      if (listUrl) {
+        await del(listUrl);
+        urlCache.delete(PATHS.sessionsList);
+      }
+
+      await putBlob(PATHS.sessionsList, sessionsList);
+    }
+  } catch (error) {
+    console.error('Error creating session:', error);
+    throw error;
   }
 }
 
 export async function getSession(sessionId: string): Promise<Session | null> {
-  return await getBlob<Session>(PATHS.session(sessionId));
+  try {
+    return await getBlob<Session>(PATHS.session(sessionId));
+  } catch (error) {
+    console.error('Error getting session:', error);
+    return null;
+  }
 }
 
 export async function updateSession(
   sessionId: string,
   updates: Partial<Session>
 ): Promise<void> {
-  const session = await getSession(sessionId);
-  if (!session) throw new Error('Session not found');
+  try {
+    const session = await getSession(sessionId);
 
-  const updatedSession: Session = {
-    ...session,
-    ...updates,
-    updatedAt: new Date(),
-  };
+    if (!session) {
+      console.error('Session not found for update:', sessionId);
+      throw new Error('Session not found');
+    }
 
-  await putBlob(PATHS.session(sessionId), updatedSession);
+    const updatedSession: Session = {
+      ...session,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    // Supprimer l'ancien blob d'abord
+    const oldUrl = await getBlobUrl(PATHS.session(sessionId));
+    if (oldUrl) {
+      console.log('Deleting old blob:', oldUrl);
+      await del(oldUrl);
+      // Invalider le cache
+      urlCache.delete(PATHS.session(sessionId));
+    }
+
+    // Créer le nouveau blob
+    await putBlob(PATHS.session(sessionId), updatedSession);
+  } catch (error) {
+    console.error('Error updating session:', error);
+    throw error;
+  }
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {

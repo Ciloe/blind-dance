@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { PlayerStats } from '@/types/stats';
 import { Trophy, TrendingUp, Target, Award, Calendar, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getPlayerStats, getLeaderboard } from '@/actions/stats';
 
 interface LeaderboardEntry {
   username: string;
@@ -43,10 +44,9 @@ function StatsPageContent() {
   const fetchPlayerStats = async (user: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/stats/player?username=${encodeURIComponent(user)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setPlayerStats(data);
+      const result = await getPlayerStats(user);
+      if (result.success && result.data) {
+        setPlayerStats(result.data);
       }
     } catch (error) {
       console.error('Error fetching player stats:', error);
@@ -57,10 +57,9 @@ function StatsPageContent() {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch('/api/stats/leaderboard');
-      if (response.ok) {
-        const data = await response.json();
-        setLeaderboard(data);
+      const result = await getLeaderboard();
+      if (result.success && result.data) {
+        setLeaderboard(result.data);
       }
     } catch (error) {
       console.error('Error fetching leaderboard:', error);

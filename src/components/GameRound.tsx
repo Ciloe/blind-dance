@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Round } from '@/types';
 import { Clock, CheckCircle } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
+import { submitAnswer } from '@/actions/session';
 
 interface GameRoundProps {
   round: Round;
@@ -56,21 +57,18 @@ export default function GameRound({
     setHasAnswered(true);
 
     try {
-      const response = await fetch('/api/answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          playerId,
-          roundNumber,
-          answer,
-          timeRemaining,
-        }),
-      });
+      const result = await submitAnswer(
+        sessionId,
+        playerId,
+        roundNumber,
+        answer,
+        timeRemaining
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        setResult({ points: data.points, isCorrect: data.isCorrect });
+      if (result.success && result.data) {
+        setResult({ points: result.data.points, isCorrect: result.data.isCorrect });
+      } else {
+        console.error('Error submitting answer:', result.error);
       }
     } catch (error) {
       console.error('Error submitting answer:', error);

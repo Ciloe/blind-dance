@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPlayerStats } from '@/lib/kv';
+import { getPlayerStats } from '@/lib/blob';
 
 export const dynamic = 'force-dynamic';
 

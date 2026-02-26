@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveSessionResult } from '@/lib/kv';
+import { saveSessionResult } from '@/lib/blob';
 import { SessionResult } from '@/types/stats';
 
 export async function POST(request: NextRequest) {

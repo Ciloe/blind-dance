@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, addPlayerToSession } from '@/lib/kv';
+import { getSession, addPlayerToSession } from '@/lib/blob';
 import { generatePlayerId } from '@/lib/utils';
 import { Player } from '@/types';
 

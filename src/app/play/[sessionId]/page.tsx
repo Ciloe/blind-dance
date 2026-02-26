@@ -12,6 +12,7 @@ import { Avatar, Session, ScoreEntry } from '@/types';
 import { generateRandomUsername, getRandomAvatar, rankPlayers } from '@/lib/utils';
 import { AVATARS } from '@/types';
 import { useSession } from '@/hooks/useSession';
+import { getSession, joinSession } from '@/actions/session';
 
 export default function PlayPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const resolvedParams = use(params);
@@ -74,28 +75,22 @@ export default function PlayPage({ params }: { params: Promise<{ sessionId: stri
     setError('');
 
     try {
-      const response = await fetch('/api/player/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: resolvedParams.sessionId,
-          username: username.trim(),
-          avatar: selectedAvatar,
-        }),
-      });
+      const result = await joinSession(
+        resolvedParams.sessionId,
+        username.trim(),
+        selectedAvatar
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-        setPlayerId(data.playerId);
+      if (result.success && result.data) {
+        setPlayerId(result.data.playerId);
         setHasJoined(true);
         // Stocker dans localStorage pour persistance
         localStorage.setItem(
           `player_${resolvedParams.sessionId}`,
-          JSON.stringify({ playerId: data.playerId, username, avatar: selectedAvatar })
+          JSON.stringify({ playerId: result.data.playerId, username, avatar: selectedAvatar })
         );
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Erreur lors de la connexion');
+        setError(result.error || 'Erreur lors de la connexion');
       }
     } catch (error) {
       console.error('Error joining session:', error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, updateSession } from '@/lib/kv';
+import { getSession, updateSession } from '@/lib/blob';
 
 export async function GET(
   request: NextRequest,

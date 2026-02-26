@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getLeaderboard } from '@/lib/kv';
+import { getLeaderboard } from '@/lib/blob';
 
 export async function GET() {
   try {
